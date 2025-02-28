@@ -10,12 +10,18 @@ const fs = require("fs");
 const osReleasePath = "/etc/os-release";
 
 // consts for functions
-const totalMem = os.totalmem() / (1024 * 1024 * 1024);
-const usedMem = (os.totalmem() - os.freemem()) / (1024 * 1024 * 1024);
+const totalMem = os.totalmem() / 1073741824;
+const memInfo = fs.readFileSync("/proc/meminfo", "utf-8");
+const match = memInfo.match(/^MemAvailable:\s+(\d+)/m);
+const freeMem = (match ? parseInt(match[1], 10) * 1024 : 0) / 1073741824;
+const usedMem = totalMem - freeMem;
 const uptime = os.uptime();
-const days = Math.floor(uptime / (60 * 60 * 24));
-const hours = Math.floor((uptime % (60 * 60 * 24)) / (60 * 60));
-const minutes = Math.floor((uptime % (60 * 60)) / 60);
+
+const date = new Date(uptime * 1000);
+
+const days = Math.floor(uptime / 86400);
+const hours = date.getUTCHours();
+const minutes = date.getUTCMinutes();
 
 // clear console function
 function clearConsole() {
@@ -114,8 +120,8 @@ async function main() {
         const available = stats.bfree * stats.bsize;
         const used = total - available;
 
-        const totalGB = (total / 1024 ** 3).toFixed(2);
-        const usedGB = (used / 1024 ** 3).toFixed(2);
+        const totalGB = (total / 1073741824).toFixed(2);
+        const usedGB = (used / 1073741824).toFixed(2);
         const usePercent = ((used / total) * 100).toFixed(2);
         const width = process.stdout.columns;
         const isMac = process.platform === "darwin";
@@ -125,26 +131,26 @@ async function main() {
 
         // printing sys info
         console.log(
-          `\x1b[34m❯ wutdepc\x1b[0m\x1b[37m | \x1b[0m\x1b[32m${
-            os.userInfo().username
-          }@${os.hostname()}\x1b[0m\x1b[37m | \x1b[33mby Fynjirby\x1b[0m\n`,
+          `\x1b[34m❯ wutdepc\x1b[0m\x1b[37m | \x1b[0m\x1b[32m${os.userInfo().username}@${os.hostname()}\x1b[0m\x1b[37m | \x1b[33mby Fynjirby\x1b[0m\n`,
         );
         console.log(`\x1b[31m${"=".repeat(width)}\x1b[0m\n`);
         console.log(`${space}📊${space}Operating System: ${osInfo}`);
         try {
           console.log(`${space}💻${space}CPU: ${os.cpus()[0].model}`);
-        } catch (error) {
+        } catch (_) {
           console.log(`${space}💻${space}CPU: Unknown`);
         }
         try {
           console.log(`${space}🎥${space}GPU: ${data.controllers[0].model}`);
-        } catch (error) {
+        } catch (_) {
           console.log(`${space}🎥${space}GPU: Unknown`);
         }
         console.log(`${space}🖥️${space}DE: ${getDesktopEnvironment()}`);
         console.log(`${space}⌨️${space}Terminal: ${getShell()}`);
         console.log(
-          `${space}🧠${space}RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(2)}GB`,
+          `${space}🧠${space}RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(
+            2,
+          )}GB`,
         );
         console.log(
           `${space}💾${space}Used Disk: ${usedGB}GB/${totalGB}GB (${usePercent}%)`,
