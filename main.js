@@ -111,8 +111,8 @@ async function main() {
         // consts for main
         const totalDisk = fsData[0].size / (1024 * 1024 * 1024);
         const freeDisk = fsData[0].available / (1024 * 1024 * 1024);
-        const usedPercent = ((totalDisk - freeDisk) / totalDisk) * 100;
         const usedGB = totalDisk - freeDisk;
+        const usedPercent = ((usedGB / totalDisk) * 100).toFixed(2);
         const width = process.stdout.columns;
         const isMac = process.platform === "darwin";
         const space = isMac ? "\u00A0" : " ";
@@ -143,9 +143,7 @@ async function main() {
           `${space}🧠${space}RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(2)}GB`,
         );
         console.log(
-          `${space}💻${space}Used Disk: ${usedGB.toFixed(2)}GB/${totalDisk.toFixed(
-            2,
-          )}GB (${usedPercent.toFixed(2)}%)`,
+          `${space}💾${space}Used Disk: ${usedGB.toFixed(2)}GB / ${totalDisk.toFixed(2)}GB (${usedPercent}%)`,
         );
         console.log(`${space}📁${space}Current Directory: ${process.cwd()}`);
         console.log(
@@ -166,6 +164,7 @@ async function main() {
   | Also try ip!herr: npmjs.com/package/ipherr |
   | Install: npm i -g ipherr                   |
   '--------------------------------------------'`);
+        console.log("");
       });
     });
   });
