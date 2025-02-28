@@ -115,7 +115,7 @@ async function main() {
         const usedGB = totalDisk - freeDisk;
         const width = process.stdout.columns;
         const isMac = process.platform === "darwin";
-        const space = isMac ? "\u00A0\u00A0" : " ";
+        const space = isMac ? "\u00A0" : " ";
         const lang = Intl.DateTimeFormat().resolvedOptions().locale;
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -126,34 +126,38 @@ async function main() {
           }@${os.hostname()}\x1b[0m\x1b[37m | \x1b[33mby Fynjirby\x1b[0m\n`,
         );
         console.log(`\x1b[31m${"=".repeat(width)}\x1b[0m\n`);
-        console.log(`📊 Operating System: ${osInfo}`);
+        console.log(`${space}📊${space}Operating System: ${osInfo}`);
         try {
-          console.log(`💻 CPU: ${os.cpus()[0].model}`);
+          console.log(`${space}💻${space}CPU: ${os.cpus()[0].model}`);
         } catch (error) {
-          console.log(`💻 CPU: Unknown`);
+          console.log(`${space}💻${space}CPU: Unknown`);
         }
         try {
-          console.log(`🎥 GPU: ${data.controllers[0].model}`);
+          console.log(`${space}🎥${space}GPU: ${data.controllers[0].model}`);
         } catch (error) {
-          console.log(`🎥 GPU: Unknown`);
+          console.log(`${space}🎥${space}GPU: Unknown`);
         }
-        console.log(`🖥️${space}DE: ${getDesktopEnvironment()}`);
-        console.log(`⌨️${space}Terminal: ${getShell()}`);
-        console.log(`🧠 RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(2)}GB`);
+        console.log(`${space}🖥️${space}DE: ${getDesktopEnvironment()}`);
+        console.log(`${space}⌨️${space}Terminal: ${getShell()}`);
         console.log(
-          `💻 Used Disk: ${usedGB.toFixed(2)}GB/${totalDisk.toFixed(
+          `${space}🧠${space}RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(2)}GB`,
+        );
+        console.log(
+          `${space}💻${space}Used Disk: ${usedGB.toFixed(2)}GB/${totalDisk.toFixed(
             2,
           )}GB (${usedPercent.toFixed(2)}%)`,
         );
-        console.log(`📁 Current Directory: ${process.cwd()}`);
+        console.log(`${space}📁${space}Current Directory: ${process.cwd()}`);
         console.log(
-          `⏳ Uptime: ${days} days, ${hours} hours, ${minutes} minutes`,
+          `${space}⏳${space}Uptime: ${days} days, ${hours} hours, ${minutes} minutes`,
         );
 
-        console.log(`🌎 Language: ${lang}`);
-        console.log(`🕰️${space}Timezone: ${timezone}`);
-        console.log(`✅ Node.js Version: ${process.version}`);
-        console.log(`🧅 Bun.js Version: ${process.versions.bun}`);
+        console.log(`${space}🌎${space}Language: ${lang}`);
+        console.log(`${space}🕰️${space}Timezone: ${timezone}`);
+        console.log(`${space}✅${space}Node.js Version: ${process.version}`);
+        console.log(
+          `${space}🧅${space}Bun.js Version: ${process.versions.bun}`,
+        );
         console.log(`\n\x1b[31m${"=".repeat(width)}\x1b[0m`);
 
         // ip!herr ad btw :)
