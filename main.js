@@ -7,7 +7,6 @@ process.stdout.write("\x1b[8;27;80t");
 const os = require("os");
 const sysinfo = require("systeminformation");
 const fs = require("fs");
-const checkDiskSpace = require("check-disk-space");
 const osReleasePath = "/etc/os-release";
 
 // consts for functions
@@ -101,104 +100,78 @@ function getShell() {
   }
 }
 
-// get Disk Info function
-async function getDiskInfo() {
-  try {
-    const fsData = await sysinfo.fsSize();
-    if (!fsData || fsData.length === 0 || fsData[0].size === 0) {
-      throw new Error("Invalid disk data from systeminformation");
-    }
-    return {
-      total: fsData[0].size / (1024 * 1024 * 1024),
-      free: fsData[0].available / (1024 * 1024 * 1024),
-    };
-  } catch (error) {
-    const path = process.platform === "win32" ? "C:" : "/";
-    const diskData = await checkDiskSpace(path);
-    return {
-      total: diskData.size / (1024 * 1024 * 1024),
-      free: diskData.free / (1024 * 1024 * 1024),
-    };
-  }
-}
-
 // main function
 async function main() {
   clearConsole();
 
-  try {
-    const [graphicsData, diskData, osInfo] = await Promise.all([
-      sysinfo.graphics(),
-      getDiskInfo(),
-      getSystemInfo(),
-    ]);
+  // first 3 lines is waitersfor full info is ready
+  sysinfo.graphics().then((data) => {
+    sysinfo.fsSize().then((fsData) => {
+      getSystemInfo().then((osInfo) => {
+        // consts for main
+        const stats = fs.statfsSync("/");
+        const total = stats.blocks * stats.bsize;
+        const available = stats.bfree * stats.bsize;
+        const used = total - available;
 
-    // consts for main
-    const totalDisk = diskData.total;
-    const freeDisk = diskData.free;
-    const usedPercent = ((totalDisk - freeDisk) / totalDisk) * 100;
-    const usedGB = totalDisk - freeDisk;
-    const width = process.stdout.columns;
-    const isMac = process.platform === "darwin";
-    const space = isMac ? "\u00A0" : " ";
-    const lang = Intl.DateTimeFormat().resolvedOptions().locale;
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const totalGB = (total / 1024 ** 3).toFixed(2);
+        const usedGB = (used / 1024 ** 3).toFixed(2);
+        const usePercent = ((used / total) * 100).toFixed(2);
+        const width = process.stdout.columns;
+        const isMac = process.platform === "darwin";
+        const space = isMac ? "\u00A0" : " ";
+        const lang = Intl.DateTimeFormat().resolvedOptions().locale;
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    // printing sys info
-    console.log(
-      `\x1b[34m❯ wutdepc\x1b[0m\x1b[37m | \x1b[0m\x1b[32m${
-        os.userInfo().username
-      }@${os.hostname()}\x1b[0m\x1b[37m | \x1b[33mby Fynjirby\x1b[0m\n`,
-    );
-    console.log(`\x1b[31m${"=".repeat(width)}\x1b[0m\n`);
-    console.log(`${space}📊${space}Operating System: ${osInfo}`);
+        // printing sys info
+        console.log(
+          `\x1b[34m❯ wutdepc\x1b[0m\x1b[37m | \x1b[0m\x1b[32m${
+            os.userInfo().username
+          }@${os.hostname()}\x1b[0m\x1b[37m | \x1b[33mby Fynjirby\x1b[0m\n`,
+        );
+        console.log(`\x1b[31m${"=".repeat(width)}\x1b[0m\n`);
+        console.log(`${space}📊${space}Operating System: ${osInfo}`);
+        try {
+          console.log(`${space}💻${space}CPU: ${os.cpus()[0].model}`);
+        } catch (error) {
+          console.log(`${space}💻${space}CPU: Unknown`);
+        }
+        try {
+          console.log(`${space}🎥${space}GPU: ${data.controllers[0].model}`);
+        } catch (error) {
+          console.log(`${space}🎥${space}GPU: Unknown`);
+        }
+        console.log(`${space}🖥️${space}DE: ${getDesktopEnvironment()}`);
+        console.log(`${space}⌨️${space}Terminal: ${getShell()}`);
+        console.log(
+          `${space}🧠${space}RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(2)}GB`,
+        );
+        console.log(
+          `${space}💾${space}Used Disk: ${usedGB}GB/${totalGB}GB (${usePercent}%)`,
+        );
+        console.log(`${space}📁${space}Current Directory: ${process.cwd()}`);
+        console.log(
+          `${space}⏳${space}Uptime: ${days} days, ${hours} hours, ${minutes} minutes`,
+        );
 
-    try {
-      console.log(`${space}💻${space}CPU: ${os.cpus()[0].model}`);
-    } catch (error) {
-      console.log(`${space}💻${space}CPU: Unknown`);
-    }
+        console.log(`${space}🌎${space}Language: ${lang}`);
+        console.log(`${space}🕰️${space}Timezone: ${timezone}`);
+        console.log(`${space}✅${space}Node.js Version: ${process.version}`);
+        console.log(
+          `${space}🧅${space}Bun.js Version: ${process.versions.bun}`,
+        );
+        console.log(`\n\x1b[31m${"=".repeat(width)}\x1b[0m`);
 
-    try {
-      console.log(
-        `${space}🎥${space}GPU: ${graphicsData.controllers[0].model}`,
-      );
-    } catch (error) {
-      console.log(`${space}🎥${space}GPU: Unknown`);
-    }
-
-    console.log(`${space}🖥️${space}DE: ${getDesktopEnvironment()}`);
-    console.log(`${space}⌨️${space}Terminal: ${getShell()}`);
-    console.log(
-      `${space}🧠${space}RAM: ${usedMem.toFixed(2)}GB/${totalMem.toFixed(2)}GB`,
-    );
-    console.log(
-      `${space}💻${space}Used Disk: ${usedGB.toFixed(2)}GB/${totalDisk.toFixed(2)}GB ` +
-        `(${usedPercent.toFixed(2)}%)`,
-    );
-    console.log(`${space}📁${space}Current Directory: ${process.cwd()}`);
-    console.log(
-      `${space}⏳${space}Uptime: ${days} days, ${hours} hours, ${minutes} minutes`,
-    );
-    console.log(`${space}🌎${space}Language: ${lang}`);
-    console.log(`${space}🕰️${space}Timezone: ${timezone}`);
-    console.log(`${space}✅${space}Node.js Version: ${process.version}`);
-
-    if (process.versions.bun) {
-      console.log(`${space}🧅${space}Bun.js Version: ${process.versions.bun}`);
-    }
-
-    console.log(`\n\x1b[31m${"=".repeat(width)}\x1b[0m`);
-    console.log(`
+        // ip!herr ad btw :)
+        console.log(`
   .--------------------------------------------.
   | Also try ip!herr: npmjs.com/package/ipherr |
   | Install: npm i -g ipherr                   |
   '--------------------------------------------'`);
-    console.log("");
-  } catch (error) {
-    console.error("\x1b[31mError:\x1b[0m", error.message);
-    process.exit(1);
-  }
+        console.log("");
+      });
+    });
+  });
 }
 
 main();
